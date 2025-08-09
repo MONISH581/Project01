@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyshakthiVue - College Attendance Calculator</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/esm/lucide-react.js" type="module"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Import icons (simplified version)
+        const Calculator = () => React.createElement('div', {className: 'w-8 h-8 bg-white rounded flex items-center justify-center text-indigo-600 font-bold'}, '📊');
+        const BookOpen = () => React.createElement('div', {className: 'w-8 h-8 text-green-500'}, '📚');
+        const Users = () => React.createElement('div', {className: 'w-8 h-8 text-purple-500'}, '👥');
+        const TrendingUp = () => React.createElement('div', {className: 'w-8 h-8 text-indigo-500'}, '📈');
+        const AlertCircle = () => React.createElement('div', {className: 'w-6 h-6 text-orange-500'}, '⚠️');
+        const CheckCircle = () => React.createElement('div', {className: 'w-5 h-5 text-green-500'}, '✅');
+        const XCircle = () => React.createElement('div', {className: 'w-5 h-5 text-red-500'}, '❌');
+        const Plus = () => React.createElement('div', {className: 'w-4 h-4'}, '+');
+        const Trash2 = () => React.createElement('div', {className: 'w-4 h-4'}, '🗑️');
+
+        const AttendanceCalculator = () => {
+          const [subjects, setSubjects] = useState([
+            { id: 1, name: '', totalClasses: '', attendedClasses: '', percentage: 0 }
+          ]);
+          const [overallPercentage, setOverallPercentage] = useState(0);
+          const [minRequiredPercentage, setMinRequiredPercentage] = useState(75);
+
+          const addSubject = () => {
+            const newId = Math.max(...subjects.map(s => s.id)) + 1;
+            setSubjects([...subjects, { 
+              id: newId, 
+              name: '', 
+              totalClasses: '', 
+              attendedClasses: '', 
+              percentage: 0 
+            }]);
+          };
+
+
+
+          
+          const removeSubject = (id) => {
+            if (subjects.length > 1) {
+              setSubjects(subjects.filter(subject => subject.id !== id));
+            }
+          };
+
+          const updateSubject = (id, field, value) => {
+            setSubjects(subjects.map(subject => {
+              if (subject.id === id) {
+                const updated = { ...subject, [field]: value };
+                
+                if (field === 'totalClasses' || field === 'attendedClasses') {
+                  const total = field === 'totalClasses' ? parseInt(value) || 0 : parseInt(updated.totalClasses) || 0;
+                  const attended = field === 'attendedClasses' ? parseInt(value) || 0 : parseInt(updated.attendedClasses) || 0;
+                  
+                  if (total > 0) {
+                    updated.percentage = Math.round((attended / total) * 100 * 100) / 100;
+                  } else {
+                    updated.percentage = 0;
+                  }
+                }
+                
+                return updated;
+              }
+              return subject;
+            }));
+          };
+
+          const calculateClassesNeeded = (currentAttended, currentTotal, targetPercentage) => {
+            if (currentTotal === 0) return 0;
+            
+            const currentPercentage = (currentAttended / currentTotal) * 100;
+            if (currentPercentage >= targetPercentage) return 0;
+            
+            const classesNeeded = Math.ceil((targetPercentage * currentTotal - 100 * currentAttended) / (100 - targetPercentage));
+            return Math.max(0, classesNeeded);
+          };
+
+          const calculateClassesCanMiss = (currentAttended, currentTotal, targetPercentage) => {
+            if (currentTotal === 0) return 0;
+            
+            const currentPercentage = (currentAttended / currentTotal) * 100;
+            if (currentPercentage <= targetPercentage) return 0;
+            
+            const maxTotal = Math.floor((100 * currentAttended) / targetPercentage);
+            const canMiss = Math.max(0, maxTotal - currentTotal);
+            return canMiss;
+          };
+
+          useEffect(() => {
+            const validSubjects = subjects.filter(s => 
+              s.totalClasses && s.attendedClasses && 
+              parseInt(s.totalClasses) > 0
+            );
+            
+            if (validSubjects.length > 0) {
+              const totalClasses = validSubjects.reduce((sum, s) => sum + parseInt(s.totalClasses), 0);
+              const totalAttended = validSubjects.reduce((sum, s) => sum + parseInt(s.attendedClasses), 0);
+              setOverallPercentage(Math.round((totalAttended / totalClasses) * 100 * 100) / 100);
+            } else {
+              setOverallPercentage(0);
+            }
+          }, [subjects]);
+
+          const getStatusColor = (percentage) => {
+            if (percentage >= 85) return 'text-green-600';
+            if (percentage >= minRequiredPercentage) return 'text-yellow-600';
+            return 'text-red-600';
+          };
+
+          const getStatusIcon = (percentage) => {
+            if (percentage >= minRequiredPercentage) return React.createElement(CheckCircle);
+            return React.createElement(XCircle);
+          };
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
+                <div className="max-w-6xl mx-auto px-4 py-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-white/20 p-3 rounded-full">
+                        {React.createElement(Calculator)}
+                      </div>
+                      <div className="text-center">
+                        <h1 className="text-3xl font-bold">MyshakthiVue</h1>
+                        <p className="text-indigo-100">College Attendance Calculator</p>
+                      </div>
+                    </div>
+                    <div className="hidden md:flex items-center space-x-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{overallPercentage}%</div>
+                        <div className="text-sm text-indigo-100">Overall</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-w-6xl mx-auto px-4 py-8">
+                <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+                  <div className="flex items-center space-x-3 mb-4">
+                    {React.createElement(AlertCircle)}
+                    <h2 className="text-xl font-semibold text-gray-800">Settings</h2>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-2">
+                      <span className="text-gray-700 font-medium">Minimum Required Percentage:</span>
+                      <input
+                        type="number"
+                        value={minRequiredPercentage}
+                        onChange={(e) => setMinRequiredPercentage(parseInt(e.target.value) || 75)}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-gray-600">%</span>
+                    </label>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">
+                    * As per Tamil Nadu University regulations, minimum 75% attendance is typically required for exam eligibility
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Overall Percentage</p>
+                        <p className={`text-2xl font-bold ${getStatusColor(overallPercentage)}`}>
+                          {overallPercentage}%
+                        </p>
+                      </div>
+                      {React.createElement(TrendingUp)}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Total Subjects</p>
+                        <p className="text-2xl font-bold text-gray-800">{subjects.length}</p>
+                      </div>
+                      {React.createElement(BookOpen)}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Status</p>
+                        <p className={`text-lg font-semibold ${getStatusColor(overallPercentage)}`}>
+                          {overallPercentage >= minRequiredPercentage ? 'Eligible' : 'At Risk'}
+                        </p>
+                      </div>
+                      {getStatusIcon(overallPercentage)}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-600 text-sm">Required</p>
+                        <p className="text-2xl font-bold text-indigo-600">{minRequiredPercentage}%</p>
+                      </div>
+                      {React.createElement(Users)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-semibold text-gray-800">Subject-wise Attendance</h2>
+                    <button
+                      onClick={addSubject}
+                      className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      {React.createElement(Plus)}
+                      <span>Add Subject</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {subjects.map((subject) => {
+                      const totalClasses = parseInt(subject.totalClasses) || 0;
+                      const attendedClasses = parseInt(subject.attendedClasses) || 0;
+                      const classesNeeded = calculateClassesNeeded(attendedClasses, totalClasses, minRequiredPercentage);
+                      const classesCanMiss = calculateClassesCanMiss(attendedClasses, totalClasses, minRequiredPercentage);
+                      
+                      return (
+                        <div key={subject.id} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              {getStatusIcon(subject.percentage)}
+                              <h3 className="text-lg font-medium text-gray-800">
+                                Subject {subject.id}
+                              </h3>
+                            </div>
+                            {subjects.length > 1 && (
+                              <button
+                                onClick={() => removeSubject(subject.id)}
+                                className="text-red-500 hover:text-red-700 p-1"
+                              >
+                                {React.createElement(Trash2)}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Subject Name
+                              </label>
+                              <input
+                                type="text"
+                                value={subject.name}
+                                onChange={(e) => updateSubject(subject.id, 'name', e.target.value)}
+                                placeholder="e.g., Mathematics"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Total Classes
+                              </label>
+                              <input
+                                type="number"
+                                value={subject.totalClasses}
+                                onChange={(e) => updateSubject(subject.id, 'totalClasses', e.target.value)}
+                                placeholder="0"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                min="0"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Classes Attended
+                              </label>
+                              <input
+                                type="number"
+                                value={subject.attendedClasses}
+                                onChange={(e) => updateSubject(subject.id, 'attendedClasses', e.target.value)}
+                                placeholder="0"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                min="0"
+                                max={subject.totalClasses}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Percentage
+                              </label>
+                              <div className={`px-3 py-2 border border-gray-300 rounded-lg bg-white text-lg font-semibold ${getStatusColor(subject.percentage)}`}>
+                                {subject.percentage}%
+                              </div>
+                            </div>
+                          </div>
+
+                          {totalClasses > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              {subject.percentage < minRequiredPercentage ? (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    {React.createElement(AlertCircle)}
+                                    <span className="text-sm font-medium text-red-800">Action Required</span>
+                                  </div>
+                                  <p className="text-sm text-red-700">
+                                    You need to attend <strong>{classesNeeded}</strong> more consecutive classes to reach {minRequiredPercentage}% attendance.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    {React.createElement(CheckCircle)}
+                                    <span className="text-sm font-medium text-green-800">Safe Zone</span>
+                                  </div>
+                                  <p className="text-sm text-green-700">
+                                    You can miss up to <strong>{classesCanMiss}</strong> more classes and still maintain {minRequiredPercentage}% attendance.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="text-center mt-8 text-gray-600">
+                  <p className="text-sm">
+                    © 2024 MyshakthiVue - College Attendance Management System
+                  </p>
+                  <p className="text-xs mt-1">
+                    Designed for Tamil Nadu University regulations and requirements
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(React.createElement(AttendanceCalculator), document.getElementById('root'));
+    </script>
+</body>
+</html>
